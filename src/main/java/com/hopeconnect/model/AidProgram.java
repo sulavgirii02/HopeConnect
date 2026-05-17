@@ -21,6 +21,9 @@ public class AidProgram {
     private Timestamp createdAt;
     private Timestamp updatedAt;
     private boolean isPublished;
+    private Integer remainingCapacity;
+    private String programStatus;
+    private transient int matchScore;
 
     public AidProgram() {}
 
@@ -68,4 +71,10 @@ public class AidProgram {
     public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
     public boolean isPublished() { return isPublished; }
     public void setPublished(boolean published) { isPublished = published; }
+    public Integer getRemainingCapacity() { return remainingCapacity; }
+    public void setRemainingCapacity(Integer remainingCapacity) { this.remainingCapacity = remainingCapacity; }
+    public String getProgramStatus() { return programStatus; }
+    public void setProgramStatus(String programStatus) { this.programStatus = programStatus; }
+    public int getMatchScore() { return matchScore; }
+    public void setMatchScore(int matchScore) { this.matchScore = matchScore; }
 }
