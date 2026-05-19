@@ -19,7 +19,7 @@ public class NotificationDAO {
     public int insert(Notification n) {
         String sql = "INSERT INTO notifications (user_id,title,message,type,is_read) VALUES (?,?,?,?,?)";
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, new String[]{"id"})) {
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             if (n.getUserId() != null) ps.setInt(1, n.getUserId()); else ps.setNull(1, Types.INTEGER);
             ps.setString(2, n.getTitle());
             ps.setString(3, n.getMessage());
@@ -32,6 +32,16 @@ public class NotificationDAO {
             System.err.println("Notification insert failed: " + e.getMessage());
         }
         return -1;
+    }
+
+    public int createNotification(int userId, String title, String message, String type) {
+        Notification n = new Notification();
+        n.setUserId(userId);
+        n.setTitle(title);
+        n.setMessage(message);
+        n.setType(type);
+        n.setRead(false);
+        return insert(n);
     }
 
     /**
@@ -150,18 +160,89 @@ public class NotificationDAO {
         return list;
     }
 
+    public List<Notification> findAllByUserId(int userId) {
+        List<Notification> list = new ArrayList<>();
+        String sql = "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Notification findAllByUserId failed: " + e.getMessage());
+        }
+        return list;
+    }
+
+    public int countUnreadByUserId(int userId) {
+        String sql = "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Notification countUnreadByUserId failed: " + e.getMessage());
+        }
+        return 0;
+    }
+
     /**
      * Marks a notification as read.
      */
-    public boolean markRead(int id) {
-        String sql = "UPDATE notifications SET is_read = 1 WHERE id = ?";
+    public boolean markRead(int id, int userId) {
+        String sql = "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
+            ps.setInt(2, userId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Notification markRead failed: " + e.getMessage());
         }
         return false;
+    }
+
+    public boolean markAllRead(int userId) {
+        String sql = "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            return ps.executeUpdate() >= 0;
+        } catch (SQLException e) {
+            System.err.println("Notification markAllRead failed: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public int createNotificationForAdmins(String title, String message, String type) {
+        String sql = "SELECT id FROM users WHERE role = 'admin'";
+        int created = 0;
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            List<Integer> adminIds = new ArrayList<>();
+            while (rs.next()) adminIds.add(rs.getInt("id"));
+            for (Integer adminId : adminIds) {
+                if (createNotification(adminId, title, message, type) > 0) created++;
+            }
+        } catch (SQLException e) {
+            System.err.println("Notification createNotificationForAdmins failed: " + e.getMessage());
+        }
+        return created;
+    }
+
+    private Notification mapRow(ResultSet rs) throws SQLException {
+        Notification n = new Notification();
+        n.setId(rs.getInt("id"));
+        int uid = rs.getInt("user_id"); if (!rs.wasNull()) n.setUserId(uid);
+        n.setTitle(rs.getString("title"));
+        n.setMessage(rs.getString("message"));
+        n.setType(rs.getString("type"));
+        n.setRead(rs.getBoolean("is_read"));
+        n.setCreatedAt(rs.getTimestamp("created_at"));
+        return n;
     }
 }
