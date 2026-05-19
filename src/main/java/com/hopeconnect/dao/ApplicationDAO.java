@@ -17,9 +17,17 @@ public class ApplicationDAO {
      * Inserts a new Application and returns generated id or -1 on failure.
      */
     public int insert(Application app) {
+        try (Connection conn = DBConnection.getConnection()) {
+            return insert(app, conn);
+        } catch (SQLException e) {
+            System.err.println("Application insert failed: " + e.getMessage());
+            return -1;
+        }
+    }
+
+    public int insert(Application app, Connection conn) throws SQLException {
         String sql = "INSERT INTO applications (user_id,program_id,applied_at,status,assigned_officer,notes) VALUES (?,?,?,?,?,?)";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, new String[]{"id"})) {
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, app.getUserId());
             ps.setInt(2, app.getProgramId());
             ps.setTimestamp(3, app.getAppliedAt());
@@ -29,8 +37,6 @@ public class ApplicationDAO {
             int affected = ps.executeUpdate();
             if (affected == 0) return -1;
             try (ResultSet rs = ps.getGeneratedKeys()) { if (rs.next()) return rs.getInt(1); }
-        } catch (SQLException e) {
-            System.err.println("Application insert failed: " + e.getMessage());
         }
         return -1;
     }
@@ -60,6 +66,33 @@ public class ApplicationDAO {
             }
         } catch (SQLException e) {
             System.err.println("Application findById failed: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public Application findByIdWithProgramDetails(int id) {
+        String sql = "SELECT a.*, p.title AS program_title FROM applications a JOIN aid_programs p ON a.program_id = p.id WHERE a.id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Application a = new Application();
+                    a.setId(rs.getInt("id"));
+                    a.setUserId(rs.getInt("user_id"));
+                    a.setProgramId(rs.getInt("program_id"));
+                    a.setAppliedAt(rs.getTimestamp("applied_at"));
+                    a.setStatus(rs.getString("status"));
+                    int officer = rs.getInt("assigned_officer");
+                    if (!rs.wasNull()) a.setAssignedOfficer(officer);
+                    a.setNotes(rs.getString("notes"));
+                    a.setLastUpdated(rs.getTimestamp("last_updated"));
+                    a.setProgramTitle(rs.getString("program_title"));
+                    return a;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Application findByIdWithProgramDetails failed: " + e.getMessage());
         }
         return null;
     }
@@ -162,7 +195,7 @@ public class ApplicationDAO {
      */
     public List<Application> findByUserId(int userId) {
         List<Application> list = new ArrayList<>();
-        String sql = "SELECT * FROM applications WHERE user_id = ? ORDER BY applied_at DESC";
+        String sql = "SELECT a.*, p.title AS program_title FROM applications a LEFT JOIN aid_programs p ON a.program_id = p.id WHERE a.user_id = ? ORDER BY a.applied_at DESC";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
@@ -177,6 +210,7 @@ public class ApplicationDAO {
                     int officer = rs.getInt("assigned_officer"); if (!rs.wasNull()) a.setAssignedOfficer(officer);
                     a.setNotes(rs.getString("notes"));
                     a.setLastUpdated(rs.getTimestamp("last_updated"));
+                    a.setProgramTitle(rs.getString("program_title"));
                     list.add(a);
                 }
             }
@@ -212,4 +246,40 @@ public class ApplicationDAO {
         }
         return list;
     }
+
+    public List<java.util.Map<String, Object>> findApplicationsPaginated(String status, Integer programId, int limit, int offset) {
+        List<java.util.Map<String, Object>> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT a.id, a.status, a.applied_at, u.full_name, u.email, p.title FROM applications a JOIN users u ON a.user_id=u.id JOIN aid_programs p ON a.program_id=p.id WHERE 1=1");
+        List<Object> params = buildApplicationFilters(sql, status, programId);
+        sql.append(" ORDER BY a.applied_at DESC LIMIT ? OFFSET ?");
+        params.add(limit); params.add(offset);
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            bindParams(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    java.util.Map<String,Object> row = new java.util.HashMap<>();
+                    row.put("id", rs.getInt("id")); row.put("status", rs.getString("status")); row.put("appliedAt", rs.getTimestamp("applied_at"));
+                    row.put("userName", rs.getString("full_name")); row.put("userEmail", rs.getString("email")); row.put("programTitle", rs.getString("title"));
+                    list.add(row);
+                }
+            }
+        } catch (SQLException e) { System.err.println("Application findApplicationsPaginated failed: " + e.getMessage()); }
+        return list;
+    }
+
+    public int countApplications(String status, Integer programId) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM applications a JOIN users u ON a.user_id=u.id JOIN aid_programs p ON a.program_id=p.id WHERE 1=1");
+        List<Object> params = buildApplicationFilters(sql, status, programId);
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            bindParams(ps, params); try (ResultSet rs = ps.executeQuery()) { return rs.next() ? rs.getInt(1) : 0; }
+        } catch (SQLException e) { System.err.println("Application countApplications failed: " + e.getMessage()); }
+        return 0;
+    }
+    private List<Object> buildApplicationFilters(StringBuilder sql, String status, Integer programId) {
+        List<Object> params = new ArrayList<>();
+        if (status != null && !"all".equals(status)) { sql.append(" AND a.status = ?"); params.add(status); }
+        if (programId != null) { sql.append(" AND a.program_id = ?"); params.add(programId); }
+        return params;
+    }
+    private void bindParams(PreparedStatement ps, List<Object> params) throws SQLException { for (int i=0;i<params.size();i++) ps.setObject(i+1, params.get(i)); }
 }
