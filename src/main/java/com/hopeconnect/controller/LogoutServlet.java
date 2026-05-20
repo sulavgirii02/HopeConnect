@@ -19,11 +19,15 @@ public class LogoutServlet extends HttpServlet {
         if (req.getSession(false) != null) {
             req.getSession().invalidate();
         }
+        
+        // Explicitly clear the JSESSIONID cookie for extra security
         Cookie sessionCookie = new Cookie("JSESSIONID", "");
         sessionCookie.setMaxAge(0);
         sessionCookie.setHttpOnly(true);
         sessionCookie.setPath(req.getContextPath().isEmpty() ? "/" : req.getContextPath());
         resp.addCookie(sessionCookie);
+        
+        // Set flash message
         req.getSession(true).setAttribute("flash_success", "You have been logged out.");
         resp.sendRedirect(req.getContextPath() + "/login");
     }

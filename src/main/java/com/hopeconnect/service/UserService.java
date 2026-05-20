@@ -5,6 +5,8 @@ import com.hopeconnect.model.User;
 import com.hopeconnect.util.PasswordUtil;
 import com.hopeconnect.util.ValidationUtil;
 
+import java.sql.SQLException;
+
 /**
  * UserService
  * Provides higher-level user operations like registration and login.
@@ -33,7 +35,7 @@ public class UserService {
 
         int id = userDAO.insert(user);
         if (id <= 0) throw new IllegalArgumentException("Registration failed due to server error");
-        return "Registration successful";
+        return "Registration successful. Your account is waiting for admin approval.";
     }
 
     /**
@@ -60,7 +62,19 @@ public class UserService {
             }
         }
         if (!ok) throw new IllegalArgumentException("Invalid credentials");
-        if ("suspended".equals(user.getStatus())) throw new IllegalArgumentException("Account is deactivated");
-        return user;
+
+        String status = user.getStatus() == null ? "" : user.getStatus().toLowerCase();
+        switch (status) {
+            case "active":
+                return user;
+            case "pending":
+                throw new IllegalArgumentException("Your account is pending admin approval.");
+            case "suspended":
+                throw new IllegalArgumentException("Your account has been suspended. Please contact support.");
+            case "deactivated":
+                throw new IllegalArgumentException("Your account has been deactivated. Please contact support.");
+            default:
+                throw new IllegalArgumentException("Your account is not active. Please contact support.");
+        }
     }
 }

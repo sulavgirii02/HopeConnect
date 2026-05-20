@@ -14,7 +14,8 @@ public class User {
     private String passwordHash;
     private Integer age;
     private String role = "user"; // 'admin' or 'user'
-    private String status = "active"; // account status: active, suspended, etc.
+    private String status = "pending"; // account status: pending, active, suspended, deactivated
+    private boolean twoFactorEnabled = false; // 2FA enabled flag
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
@@ -31,6 +32,7 @@ public class User {
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.twoFactorEnabled = false;
     }
 
     public int getId() { return id; }
@@ -53,4 +55,6 @@ public class User {
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
     public Timestamp getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
+    public boolean isTwoFactorEnabled() { return twoFactorEnabled; }
+    public void setTwoFactorEnabled(boolean twoFactorEnabled) { this.twoFactorEnabled = twoFactorEnabled; }
 }

@@ -11,8 +11,7 @@ import java.io.IOException;
 
 /**
  * LoginServlet
- * Placeholder servlet for handling login requests.
- * Currently simple: renders a login JSP and handles POST to set a session attribute.
+ * Handles user login. Verifies credentials, sets session, redirects by role, and performs audit logging.
  */
 @WebServlet(name = "LoginServlet", urlPatterns = {"/login"})
 public class LoginServlet extends HttpServlet {
@@ -43,12 +42,19 @@ public class LoginServlet extends HttpServlet {
             emailCookie.setPath(req.getContextPath().isEmpty() ? "/" : req.getContextPath());
             resp.addCookie(emailCookie);
 
-            if ("admin".equals(user.getRole())) {
+            // Audit log on admin login
+            if ("admin".equalsIgnoreCase(user.getRole())) {
+                new com.hopeconnect.service.AuditLogService().log(
+                        user.getId(),
+                        "ADMIN_LOGIN",
+                        "user",
+                        user.getId(),
+                        "Admin logged in: " + user.getEmail()
+                );
                 resp.sendRedirect(req.getContextPath() + "/admin/dashboard");
-                return;
+            } else {
+                resp.sendRedirect(req.getContextPath() + "/dashboard");
             }
-            resp.sendRedirect(req.getContextPath() + "/dashboard");
-            return;
         } catch (IllegalArgumentException e) {
             req.setAttribute("error", e.getMessage());
             req.setAttribute("formEmail", email);

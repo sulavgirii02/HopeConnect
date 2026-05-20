@@ -20,7 +20,7 @@ public class UserDAO {
     public int insert(User user) {
         String sql = "INSERT INTO users (full_name,email,phone,password_hash,age,role,status) VALUES (?,?,?,?,?,?,?)";
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, new String[]{"id"})) {
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, user.getFullName());
             ps.setString(2, user.getEmail());
             ps.setString(3, user.getPhone());
@@ -154,6 +154,58 @@ public class UserDAO {
             System.err.println("User findAll failed: " + e.getMessage());
         }
         return list;
+    }
+
+    /**
+     * Returns all users. Named alias kept for clearer admin-service usage.
+     */
+    public List<User> findAllUsers() {
+        return findAll();
+    }
+
+    /**
+     * Updates only a user's account status.
+     */
+    public boolean updateUserStatus(int userId, String status) {
+        String sql = "UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("User updateUserStatus failed: " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * Counts standard users by account status.
+     */
+    public int countUsersByStatus(String status) {
+        String sql = "SELECT COUNT(*) FROM users WHERE role = 'user' AND status = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("User countUsersByStatus failed: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    public int countRegularUsers() {
+        String sql = "SELECT COUNT(*) FROM users WHERE role = 'user'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        } catch (SQLException e) {
+            System.err.println("User countRegularUsers failed: " + e.getMessage());
+        }
+        return 0;
     }
 
     /**
