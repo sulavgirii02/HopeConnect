@@ -9,10 +9,21 @@ import java.io.IOException;
 
 /**
  * AboutServlet
+<<<<<<< HEAD
  * Shows the public about page.
  */
 @WebServlet(name = "AboutServlet", urlPatterns = {"/about"})
 public class AboutServlet extends HttpServlet {
+=======
+ * Serves the about page.
+ */
+@WebServlet(name = "AboutServlet", urlPatterns = {"/about"})
+public class AboutServlet extends HttpServlet {
+
+    /**
+     * Forwards to the about JSP.
+     */
+>>>>>>> origin/feature/Adish
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.getRequestDispatcher("/views/about.jsp").forward(req, resp);
