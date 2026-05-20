@@ -33,7 +33,25 @@
         <timeout>30</timeout>
     </session-config>
 
-    <!-- Servlets are mapped with @WebServlet annotations in controller classes. -->
+    <!-- Servlet: Program Listing Controller -->
+    <servlet>
+        <servlet-name>ProgramListingServlet</servlet-name>
+        <servlet-class>com.hopeconnect.controller.ProgramListingServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ProgramListingServlet</servlet-name>
+        <url-pattern>/programs</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlet: Wishlist Controller -->
+    <servlet>
+        <servlet-name>WishlistServlet</servlet-name>
+        <servlet-class>com.hopeconnect.controller.WishlistServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>WishlistServlet</servlet-name>
+        <url-pattern>/wishlist</url-pattern>
+    </servlet-mapping>
 
     <!-- Filter: Auth Filter -->
     <filter>
@@ -44,9 +62,19 @@
         <filter-name>AuthFilter</filter-name>
         <url-pattern>/dashboard</url-pattern>
         <url-pattern>/dashboard/*</url-pattern>
-        <url-pattern>/available-programs</url-pattern>
-        <url-pattern>/available-programs/*</url-pattern>
+        <url-pattern>/user-dashboard</url-pattern>
+        <url-pattern>/user-dashboard/*</url-pattern>
+        <url-pattern>/profile</url-pattern>
+        <url-pattern>/profile/*</url-pattern>
         <url-pattern>/admin/*</url-pattern>
+        <url-pattern>/apply</url-pattern>
+        <url-pattern>/apply/*</url-pattern>
+        <url-pattern>/my-applications</url-pattern>
+        <url-pattern>/my-applications/*</url-pattern>
+        <url-pattern>/wishlist</url-pattern>
+        <url-pattern>/wishlist/*</url-pattern>
+        <url-pattern>/notifications</url-pattern>
+        <url-pattern>/notifications/*</url-pattern>
     </filter-mapping>
 
 

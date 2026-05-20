@@ -1,11 +1,13 @@
 package com.hopeconnect.service;
 
 import com.hopeconnect.dao.ApplicationDAO;
-import com.hopeconnect.dao.NotificationDAO;
+import com.hopeconnect.dao.AidProgramDAO;
+import com.hopeconnect.model.AidProgram;
 import com.hopeconnect.model.Application;
-import com.hopeconnect.model.Notification;
+import com.hopeconnect.util.DBConnection;
 
-import java.sql.Timestamp;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
  * ApplicationService
@@ -14,25 +16,38 @@ import java.sql.Timestamp;
 public class ApplicationService {
 
     private final ApplicationDAO applicationDAO = new ApplicationDAO();
-    private final NotificationDAO notificationDAO = new NotificationDAO();
+    private final NotificationService notificationService = new NotificationService();
 
     /**
      * Approves an application and creates a notification within a transaction.
      */
     public void approveApplication(int applicationId, int actorUserId) throws IllegalArgumentException {
         if (applicationId <= 0) throw new IllegalArgumentException("Invalid application id");
-        Application app = applicationDAO.findById(applicationId);
-        if (app == null) throw new IllegalArgumentException("Application not found");
-        app.setStatus("approved");
-        if (!applicationDAO.update(app)) throw new IllegalArgumentException("Unable to approve application");
-
-        Notification n = new Notification();
-        n.setUserId(app.getUserId());
-        n.setTitle("Application Approved");
-        n.setMessage("Your application for program id " + app.getProgramId() + " has been approved.");
-        n.setType("info");
-        n.setRead(false);
-        notificationDAO.insert(n);
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
+            try {
+                conn.setAutoCommit(false);
+                Application app = applicationDAO.findByIdWithProgramDetails(applicationId);
+                if (app == null) throw new IllegalArgumentException("Application not found");
+                app.setStatus("approved");
+                applicationDAO.update(app);
+                notificationService.notifyUser(
+                        app.getUserId(),
+                        "Application Approved",
+                        "Your application for " + app.getProgramTitle() + " has been approved.",
+                        "application_approved"
+                );
+                conn.commit();
+            } catch (Exception e) {
+                if (conn != null) try { conn.rollback(); } catch (SQLException ex) { /* ignore */ }
+                throw e;
+            } finally {
+                if (conn != null) try { conn.setAutoCommit(true); } catch (SQLException ex) { /* ignore */ }
+            }
+        } catch (SQLException sqle) {
+            throw new IllegalArgumentException("Database error while approving application: " + sqle.getMessage());
+        }
     }
 
     /**
@@ -40,44 +55,96 @@ public class ApplicationService {
      */
     public void rejectApplication(int applicationId, int actorUserId, String reason) throws IllegalArgumentException {
         if (applicationId <= 0) throw new IllegalArgumentException("Invalid application id");
-        Application app = applicationDAO.findById(applicationId);
-        if (app == null) throw new IllegalArgumentException("Application not found");
-        app.setStatus("rejected");
-        if (!applicationDAO.update(app)) throw new IllegalArgumentException("Unable to reject application");
-
-        Notification n = new Notification();
-        n.setUserId(app.getUserId());
-        n.setTitle("Application Rejected");
-        n.setMessage("Your application for program id " + app.getProgramId() + " has been rejected. Reason: " + (reason == null ? "" : reason));
-        n.setType("warning");
-        n.setRead(false);
-        notificationDAO.insert(n);
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
+            try {
+                conn.setAutoCommit(false);
+                Application app = applicationDAO.findByIdWithProgramDetails(applicationId);
+                if (app == null) throw new IllegalArgumentException("Application not found");
+                app.setStatus("rejected");
+                applicationDAO.update(app);
+                notificationService.notifyUser(
+                        app.getUserId(),
+                        "Application Rejected",
+                        "Your application for " + app.getProgramTitle() + " has been rejected." +
+                                (reason == null || reason.trim().isEmpty() ? "" : " Reason: " + reason),
+                        "application_rejected"
+                );
+                conn.commit();
+            } catch (Exception e) {
+                if (conn != null) try { conn.rollback(); } catch (SQLException ex) { /* ignore */ }
+                throw e;
+            } finally {
+                if (conn != null) try { conn.setAutoCommit(true); } catch (SQLException ex) { /* ignore */ }
+            }
+        } catch (SQLException sqle) {
+            throw new IllegalArgumentException("Database error while rejecting application: " + sqle.getMessage());
+        }
     }
 
     /**
      * Submits a new application for the given user and program.
-     * Enforces duplicate check and creates a notification.
+     * Enforces duplicate check, remaining capacity check, decrements quota, and creates a notification.
      */
-    public void submitApplication(int userId, int programId, String notes) throws IllegalArgumentException {
+    public boolean submitApplication(int userId, int programId, String notes) throws IllegalArgumentException {
         if (userId <= 0) throw new IllegalArgumentException("Invalid user id");
         if (programId <= 0) throw new IllegalArgumentException("Invalid program id");
-        Application existing = applicationDAO.findByUserAndProgram(userId, programId);
-        if (existing != null) throw new IllegalArgumentException("You have already applied to this program");
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
+            try {
+                conn.setAutoCommit(false);
+                // Duplicate check
+                Application existing = applicationDAO.findByUserAndProgram(userId, programId);
+                if (existing != null) throw new IllegalArgumentException("You have already applied to this program");
 
-        Application app = new Application();
-        app.setUserId(userId);
-        app.setProgramId(programId);
-        app.setAppliedAt(new Timestamp(System.currentTimeMillis()));
-        app.setStatus("pending");
-        app.setNotes(notes);
-        if (applicationDAO.insert(app) <= 0) throw new IllegalArgumentException("Unable to submit application");
+                // Capacity check
+                AidProgramDAO programDAO = new AidProgramDAO();
+                AidProgram program = programDAO.findById(programId);
+                if (program == null || !program.isPublished() || !"open".equals(program.getProgramStatus())) {
+                    throw new IllegalArgumentException("Program not found or no longer available");
+                }
+                boolean capacityAvailable = programDAO.decrementCapacity(programId, conn);
+                if (!capacityAvailable) throw new IllegalArgumentException("This program is no longer accepting applications (quota full or program closed)");
 
-        Notification n = new Notification();
-        n.setUserId(userId);
-        n.setTitle("Application Submitted");
-        n.setMessage("Your application has been submitted successfully.");
-        n.setType("info");
-        n.setRead(false);
-        notificationDAO.insert(n);
+                Application app = new Application();
+                app.setUserId(userId);
+                app.setProgramId(programId);
+                app.setAppliedAt(new java.sql.Timestamp(System.currentTimeMillis()));
+                app.setStatus("pending");
+                app.setNotes(notes);
+                applicationDAO.insert(app, conn);
+                boolean autoClosed = programDAO.closeIfFull(programId, conn);
+
+                conn.commit();
+                notificationService.notifyUser(
+                        userId,
+                        "Application Submitted",
+                        "Your application for " + program.getTitle() + " has been submitted successfully.",
+                        "application"
+                );
+                notificationService.notifyAdmins(
+                        "New Application Submitted",
+                        "User #" + userId + " submitted an application for " + program.getTitle() + ".",
+                        "admin_application"
+                );
+                if (autoClosed) {
+                    notificationService.notifyAdmins(
+                            "Program Quota Full",
+                            program.getTitle() + " has reached full capacity and was automatically closed.",
+                            "program_quota"
+                    );
+                }
+                return autoClosed;
+            } catch (Exception e) {
+                if (conn != null) try { conn.rollback(); } catch (SQLException ex) { /* ignore */ }
+                throw e;
+            } finally {
+                if (conn != null) try { conn.setAutoCommit(true); } catch (SQLException ex) { /* ignore */ }
+            }
+        } catch (SQLException sqle) {
+            throw new IllegalArgumentException("Database error while submitting application: " + sqle.getMessage());
+        }
     }
 }

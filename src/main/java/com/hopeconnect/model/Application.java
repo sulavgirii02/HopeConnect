@@ -15,11 +15,12 @@ public class Application {
     private Integer assignedOfficer;
     private String notes;
     private Timestamp lastUpdated;
+    private String programTitle;
 
     public Application() {}
 
     public Application(int id, int userId, int programId, Timestamp appliedAt, String status,
-                       Integer assignedOfficer, String notes, Timestamp lastUpdated) {
+                       Integer assignedOfficer, String notes, Timestamp lastUpdated, String programTitle) {
         this.id = id;
         this.userId = userId;
         this.programId = programId;
@@ -28,6 +29,7 @@ public class Application {
         this.assignedOfficer = assignedOfficer;
         this.notes = notes;
         this.lastUpdated = lastUpdated;
+        this.programTitle = programTitle;
     }
 
     public int getId() { return id; }
@@ -46,4 +48,6 @@ public class Application {
     public void setNotes(String notes) { this.notes = notes; }
     public Timestamp getLastUpdated() { return lastUpdated; }
     public void setLastUpdated(Timestamp lastUpdated) { this.lastUpdated = lastUpdated; }
+    public String getProgramTitle() { return programTitle; }
+    public void setProgramTitle(String programTitle) { this.programTitle = programTitle; }
 }
