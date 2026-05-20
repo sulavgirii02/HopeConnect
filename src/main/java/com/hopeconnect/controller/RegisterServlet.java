@@ -85,10 +85,15 @@ public class RegisterServlet extends HttpServlet {
         u.setPasswordHash(password); // will be hashed by service
         u.setAge(age);
         u.setRole("user");
-        u.setStatus("active");
+        u.setStatus("pending");
 
         try {
             String msg = userService.registerUser(u);
+            new com.hopeconnect.service.NotificationService().notifyAdmins(
+                    "New User Registered",
+                    email + " joined HopeConnect.",
+                    "user_registration"
+            );
             // on success redirect to login with success message
             req.getSession().setAttribute("flash_success", msg);
             resp.sendRedirect(req.getContextPath() + "/login");
