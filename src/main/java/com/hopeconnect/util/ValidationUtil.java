@@ -37,6 +37,13 @@ public class ValidationUtil {
     }
 
     /**
+     * Validates that text is non-blank and does not exceed the supplied length.
+     */
+    public static boolean hasTextWithin(String value, int maxLength) {
+        return value != null && !value.trim().isEmpty() && value.length() <= maxLength;
+    }
+
+    /**
      * Validates age is between 1 and 120.
      */
     public static boolean isValidAge(int age) {

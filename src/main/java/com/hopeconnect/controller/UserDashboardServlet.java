@@ -1,15 +1,11 @@
 package com.hopeconnect.controller;
 
-<<<<<<< HEAD
-import com.hopeconnect.model.User;
-=======
 import com.hopeconnect.dao.ApplicationDAO;
 import com.hopeconnect.dao.AidProgramDAO;
 import com.hopeconnect.dao.UserProfileDAO;
 import com.hopeconnect.model.User;
 import com.hopeconnect.model.AidProgram;
 import com.hopeconnect.model.UserProfile;
->>>>>>> origin/feature/Adish
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -18,16 +14,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-<<<<<<< HEAD
-
-/**
- * UserDashboardServlet
- * Displays a simple first-milestone dashboard for a logged-in user.
- */
-@WebServlet(name = "UserDashboardServlet", urlPatterns = {"/dashboard"})
-public class UserDashboardServlet extends HttpServlet {
-
-=======
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -35,15 +21,14 @@ import java.util.stream.Collectors;
 
 /**
  * UserDashboardServlet
- * Displays a personalized dashboard for a logged-in user.
+ * Displays a personalized dashboard for a logged-in user with intelligent program recommendations.
  */
 @WebServlet(name = "UserDashboardServlet", urlPatterns = {"/dashboard", "/user-dashboard"})
 public class UserDashboardServlet extends HttpServlet {
 
     /**
-     * Loads user profile, recent applications, and unread notifications count.
+     * Loads user profile, recent applications, unread notifications, and recommended programs.
      */
->>>>>>> origin/feature/Adish
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession(false);
@@ -52,16 +37,14 @@ public class UserDashboardServlet extends HttpServlet {
             return;
         }
         User user = (User) session.getAttribute("user");
-<<<<<<< HEAD
+        
+        // Redirect admins to admin dashboard
         if ("admin".equals(user.getRole())) {
             resp.sendRedirect(req.getContextPath() + "/admin/dashboard");
             return;
         }
-        req.setAttribute("programs", new com.hopeconnect.dao.AidProgramDAO().findAllPublished());
-        req.getRequestDispatcher("/views/userDashboard.jsp").forward(req, resp);
-    }
-}
-=======
+
+        // Load user applications and notifications
         List<com.hopeconnect.model.Application> apps = new ApplicationDAO().findByUserId(user.getId());
         int unreadCount = new com.hopeconnect.service.NotificationService().getUnreadCount(user.getId());
 
@@ -75,6 +58,8 @@ public class UserDashboardServlet extends HttpServlet {
         List<AidProgram> recommended = scoreAndSort(allPrograms, profile);
         if (recommended.size() > 3) recommended = recommended.subList(0, 3);
 
+        // Also load all published programs as fallback
+        req.setAttribute("programs", allPrograms);
         req.setAttribute("applications", apps);
         req.setAttribute("unreadCount", unreadCount);
         session.setAttribute("unreadCount", unreadCount);
@@ -127,4 +112,3 @@ public class UserDashboardServlet extends HttpServlet {
                 .collect(Collectors.toList());
     }
 }
->>>>>>> origin/feature/Adish

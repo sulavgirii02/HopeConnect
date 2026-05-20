@@ -2,10 +2,7 @@ package com.hopeconnect.controller;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-<<<<<<< HEAD
 import jakarta.servlet.http.Cookie;
-=======
->>>>>>> origin/feature/Adish
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,19 +19,16 @@ public class LogoutServlet extends HttpServlet {
         if (req.getSession(false) != null) {
             req.getSession().invalidate();
         }
-<<<<<<< HEAD
+        
+        // Explicitly clear the JSESSIONID cookie for extra security
         Cookie sessionCookie = new Cookie("JSESSIONID", "");
         sessionCookie.setMaxAge(0);
         sessionCookie.setHttpOnly(true);
         sessionCookie.setPath(req.getContextPath().isEmpty() ? "/" : req.getContextPath());
         resp.addCookie(sessionCookie);
+        
+        // Set flash message
         req.getSession(true).setAttribute("flash_success", "You have been logged out.");
         resp.sendRedirect(req.getContextPath() + "/login");
     }
 }
-=======
-        req.getSession(true).setAttribute("flash_success", "You have been logged out.");
-        resp.sendRedirect(req.getContextPath() + "/login");
-    }
-}
->>>>>>> origin/feature/Adish
