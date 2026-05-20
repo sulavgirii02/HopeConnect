@@ -3,95 +3,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Applications - HopeConnect</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Applications - HopeConnect</title>
 </head>
 <body>
 <jsp:include page="/views/partials/header.jsp" />
 
-<main class="container page admin-page" style="display: flex; flex-direction: column; flex: 1 1 auto;">
-<style>
-.admin-layout { display: flex; gap: 0; flex: 1 1 auto; min-height: calc(100vh - 58px); margin: 0; width: 100%; }
-.admin-sidebar {
-  flex: 0 0 260px;
-  width: 260px;
-  background: var(--color-primary-ghost);
-  border-right: 1px solid var(--color-gray-light);
-  padding: 20px 0;
-  position: sticky;
-  top: 58px;
-  min-height: calc(100vh - 58px);
-  max-height: calc(100vh - 58px);
-  overflow-y: auto;
-}
-.admin-sidebar h3 { padding: 0 16px; font-size: 0.85rem; font-weight: 700; color: var(--color-primary-dark); text-transform: uppercase; margin-bottom: 12px; margin-top: 16px; }
-.admin-sidebar h3:first-child { margin-top: 0; }
-.admin-sidebar a {
-  display: block;
-  padding: 10px 16px;
-  color: var(--color-gray-dark);
-  text-decoration: none;
-  font-size: 0.95rem;
-  transition: var(--transition);
-  border-left: 3px solid transparent;
-}
-.admin-sidebar a:hover { background: var(--color-white); color: var(--color-primary-dark); border-left-color: var(--color-primary); }
-.admin-sidebar a.active { background: var(--color-white); color: var(--color-primary-dark); border-left-color: var(--color-primary); font-weight: 600; }
-.admin-content { flex: 1 1 auto; min-height: 0; min-width: 0; max-width: 1180px; margin: 0 auto; padding: 40px 48px; }
-.admin-content .table { min-width: 520px; }
-.admin-header { margin-bottom: 30px; }
-.admin-header h1 { margin-bottom: 6px; }
-.admin-header p { color: var(--color-gray-mid); font-size: 14px; }
-.section { margin-bottom: 30px; }
-.section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: var(--color-primary-darkest); }
-.app-row-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.app-row-form button { flex: 0 1 auto; padding: 8px 14px; font-size: 0.85rem; }
-.app-row-form input { flex: 1; min-width: 120px; max-width: 180px; }
-@media (max-width: 1100px) {
-  .admin-layout { flex-direction: column; }
-  .admin-sidebar { width: 100%; height: auto; position: relative; top: 0; border-right: none; border-bottom: 1px solid var(--color-gray-light); padding: 16px 0; display: flex; flex-wrap: wrap; gap: 0; }
-  .admin-sidebar h3 { flex-basis: 100%; padding: 0 16px; margin: 0; }
-  .admin-sidebar a { flex: 1 1 150px; border-bottom: 1px solid var(--color-gray-light); border-left: none; padding: 12px 16px; }
-  .admin-content { padding: 20px; }
-  .app-row-form { flex-direction: column; align-items: stretch; }
-  .app-row-form button, .app-row-form input { width: 100%; max-width: none; }
-  .admin-content .table { min-width: 520px; }
-}
-</style>
+<div class="container page admin-page">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h3>Navigation</h3>
+      <a href="${pageContext.request.contextPath}/admin/dashboard">Dashboard</a>
+      <a href="${pageContext.request.contextPath}/admin/programs">Programs</a>
+      <a href="${pageContext.request.contextPath}/admin/applications" class="active">Applications</a>
+      <a href="${pageContext.request.contextPath}/admin/users">Users</a>
+      <a href="${pageContext.request.contextPath}/admin/messages">Messages</a>
+      <h3>Account</h3>
+      <a href="${pageContext.request.contextPath}/logout">Logout</a>
+    </aside>
 
-<div class="admin-layout">
-  <aside class="admin-sidebar">
-    <h3>Navigation</h3>
-    <a href="${pageContext.request.contextPath}/admin/dashboard">Dashboard</a>
-    <a href="${pageContext.request.contextPath}/admin/programs">Programs</a>
-    <a href="${pageContext.request.contextPath}/admin/applications" class="active">Applications</a>
-    <a href="${pageContext.request.contextPath}/admin/users">Users</a>
-    <h3>Account</h3>
-    <a href="${pageContext.request.contextPath}/logout">Logout</a>
-  </aside>
+    <main class="admin-content">
+      <div class="admin-header">
+        <h1>Review Applications</h1>
+        <p>Approve or reject user applications for welfare programs</p>
+      </div>
 
-  <main class="admin-content">
-    <div class="admin-header">
-      <h1>Review Applications</h1>
-      <p>Approve or reject user applications for welfare programs</p>
-    </div>
+      <c:if test="${not empty sessionScope.flashMessage}">
+        <c:choose>
+          <c:when test="${sessionScope.flashType == 'success'}">
+            <div class="alert alert-success" role="alert">
+              <c:out value="${sessionScope.flashMessage}" />
+            </div>
+          </c:when>
+          <c:when test="${sessionScope.flashType == 'error'}">
+            <div class="alert alert-error" role="alert">
+              <c:out value="${sessionScope.flashMessage}" />
+            </div>
+          </c:when>
+          <c:otherwise>
+            <div class="alert alert-info" role="alert">
+              <c:out value="${sessionScope.flashMessage}" />
+            </div>
+          </c:otherwise>
+        </c:choose>
+        <c:remove var="flashMessage" scope="session" />
+        <c:remove var="flashType" scope="session" />
+      </c:if>
 
-    <div class="section">
-      <h2 class="section-title">Pending & Historical Applications</h2>
-      <div class="card">
-        <div class="table-wrap">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>User</th>
-                <th>Program</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+      <div class="section">
+        <h2 class="section-title">Pending & Historical Applications</h2>
+        <form method="get" action="${pageContext.request.contextPath}/admin/applications" class="filter-bar">
+          <div class="filter-group">
+            <label class="filter-label" for="status">Status</label>
+            <select id="status" name="status" class="filter-select">
+              <option value="all" ${requestScope.selectedStatus == 'all' ? 'selected' : ''}>All Applications</option>
+              <option value="pending" ${requestScope.selectedStatus == 'pending' ? 'selected' : ''}>Pending</option>
+              <option value="approved" ${requestScope.selectedStatus == 'approved' ? 'selected' : ''}>Approved</option>
+              <option value="rejected" ${requestScope.selectedStatus == 'rejected' ? 'selected' : ''}>Rejected</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="programId">Program</label>
+            <select id="programId" name="programId" class="filter-select">
+              <option value="">All Programs</option>
+              <c:forEach var="p" items="${requestScope.programs}">
+                <option value="${p.id}" ${requestScope.selectedProgramId == p.id ? 'selected' : ''}><c:out value="${p.title}" /></option>
+              </c:forEach>
+            </select>
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-primary" type="submit">Filter</button>
+            <a class="btn btn-secondary" href="${pageContext.request.contextPath}/admin/applications">Clear</a>
+          </div>
+        </form>
+        <div class="card">
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>ID</th><th>User</th><th>Program</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
               <c:choose>
                 <c:when test="${not empty requestScope.applications}">
                   <c:forEach var="a" items="${requestScope.applications}">
@@ -99,47 +89,69 @@
                       <td><strong>#<c:out value="${a.id}" /></strong></td>
                       <td>
                         <div><c:out value="${a.userName}" /></div>
-                        <div style="font-size: 0.85rem; color: var(--color-gray-mid);"><c:out value="${a.userEmail}" /></div>
+                        <div class="muted" style="font-size:0.85rem;"><c:out value="${a.userEmail}" /></div>
                       </td>
                       <td><c:out value="${a.programTitle}" /></td>
                       <td>
                         <c:choose>
-                          <c:when test="${a.status == 'approved'}">
-                            <span class="badge badge-approved">Approved</span>
-                          </c:when>
-                          <c:when test="${a.status == 'rejected'}">
-                            <span class="badge badge-rejected">Rejected</span>
-                          </c:when>
-                          <c:otherwise>
-                            <span class="badge badge-pending">Pending</span>
-                          </c:otherwise>
+                          <c:when test="${a.status == 'approved'}"><span class="badge badge-approved">Approved</span></c:when>
+                          <c:when test="${a.status == 'rejected'}"><span class="badge badge-rejected">Rejected</span></c:when>
+                          <c:otherwise><span class="badge badge-pending">Pending</span></c:otherwise>
                         </c:choose>
                       </td>
                       <td>
-                        <form method="post" action="${pageContext.request.contextPath}/admin/applications" class="app-row-form">
-                          <input type="hidden" name="id" value="${a.id}">
-                          <button class="btn btn-primary" name="action" value="approve" type="submit">Approve</button>
-                          <button class="btn btn-danger" name="action" value="reject" type="submit">Reject</button>
-                          <input type="text" name="reason" class="form-control" placeholder="Reason (optional)" style="padding: 8px 10px; font-size: 0.85rem;">
-                        </form>
+                        <c:choose>
+                          <c:when test="${a.status == 'pending'}">
+                            <form method="post" action="${pageContext.request.contextPath}/admin/applications" class="app-row-form">
+                              <input type="hidden" name="id" value="${a.id}">
+                              <button class="btn btn-primary btn-sm" name="action" value="approve" type="submit">Approve</button>
+                              <button class="btn btn-danger btn-sm" name="action" value="reject" type="submit">Reject</button>
+                              <input type="text" name="reason" class="form-control" placeholder="Reason (optional)" style="padding:8px 10px;font-size:0.85rem;">
+                            </form>
+                          </c:when>
+                          <c:otherwise>
+                            <span style="color:#94A3B8; font-size:0.9rem;">No actions available</span>
+                          </c:otherwise>
+                        </c:choose>
                       </td>
                     </tr>
                   </c:forEach>
                 </c:when>
                 <c:otherwise>
-                  <tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--color-gray-mid);">No applications found.</td></tr>
+                  <tr>
+                    <td colspan="5">
+                      <div class="empty-state" style="padding: 40px 20px;">
+                        <span class="empty-state-icon">
+                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                          </svg>
+                        </span>
+                        <h3>No records found</h3>
+                        <p>Data will appear here once available.</p>
+                      </div>
+                    </td>
+                  </tr>
                 </c:otherwise>
               </c:choose>
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
+        <c:if test="${requestScope.totalPages > 1}">
+          <div class="pagination">
+            <a class="pagination-link ${requestScope.currentPage == 1 ? 'disabled' : ''}" href="${pageContext.request.contextPath}/admin/applications?page=${requestScope.currentPage - 1}&status=${requestScope.selectedStatus}&programId=${requestScope.selectedProgramId}">Previous</a>
+            <c:forEach begin="1" end="${requestScope.totalPages}" var="i">
+              <a class="pagination-link ${requestScope.currentPage == i ? 'active' : ''}" href="${pageContext.request.contextPath}/admin/applications?page=${i}&status=${requestScope.selectedStatus}&programId=${requestScope.selectedProgramId}">${i}</a>
+            </c:forEach>
+            <a class="pagination-link ${requestScope.currentPage == requestScope.totalPages ? 'disabled' : ''}" href="${pageContext.request.contextPath}/admin/applications?page=${requestScope.currentPage + 1}&status=${requestScope.selectedStatus}&programId=${requestScope.selectedProgramId}">Next</a>
+          </div>
+        </c:if>
       </div>
-    </div>
-  </main>
+    </main>
+  </div>
 </div>
-</main>
 
 <jsp:include page="/views/partials/footer.jsp" />
 </body>
 </html>
-
