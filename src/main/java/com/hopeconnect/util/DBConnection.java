@@ -8,13 +8,13 @@ import java.sql.SQLException;
  * DBConnection.java
  * Utility class for managing MySQL database connections.
  * Provides a centralized connection management using JDBC DriverManager.
- *
+ * 
  * Database: hopeconnect_db
  * Database credentials are hardcoded for development (update for production).
  * Note: Connection pooling is not implemented - simple DriverManager is used.
  */
 public class DBConnection {
-
+    
     // Database configuration constants
     private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
     private static final String URL = "jdbc:mysql://localhost:3306/hopeconnect_db?useSSL=false&serverTimezone=UTC";
@@ -35,7 +35,7 @@ public class DBConnection {
 
     /**
      * Establishes and returns a new MySQL database connection.
-     *
+     * 
      * @return Connection object connected to hopeconnect_db
      * @throws SQLException if connection fails
      */
@@ -51,7 +51,7 @@ public class DBConnection {
     /**
      * Closes a database connection safely.
      * Suppresses any exceptions during closure.
-     *
+     * 
      * @param connection the Connection object to close
      */
     public static void closeConnection(Connection connection) {
@@ -67,7 +67,7 @@ public class DBConnection {
     /**
      * Tests the database connection.
      * Useful for verifying database setup and credentials.
-     *
+     * 
      * @return true if connection is successful, false otherwise
      */
     public static boolean testConnection() {
